@@ -8,22 +8,33 @@ from .models import Advocate
 from .serializers import AdvocateSerializer
 
 # Create your views here.
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def endpoints(request):
     data = ['/advocates', 'advocates/:username']
     return Response(data)
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def advocate_list(request):
-    query = request.GET.get('query')
+    # Handles GET request
+    if request.method == 'GET':
+        query = request.GET.get('query')
 
-    if query == None:
-        query = ''
+        if query == None:
+            query = ''
 
-    # advocate = Advocate.objects.all()
-    advocate = Advocate.objects.filter(Q(username__icontains=query) | Q(bio__icontains=query))
-    serializer = AdvocateSerializer(advocate, many=True)
-    return Response(serializer.data)
+        # advocate = Advocate.objects.all()
+        advocate = Advocate.objects.filter(Q(username__icontains=query) | Q(bio__icontains=query))
+        serializer = AdvocateSerializer(advocate, many=True)
+        return Response(serializer.data)
+    
+    # Handles POST request
+    if request.method == 'POST':
+        advocate = Advocate.objects.create(username=request.data['username'], bio=request.data['bio'])
+        serializer = AdvocateSerializer(advocate, many=False)
+
+        return Response(serializer.data)
+    
+
 
 @api_view(['GET'])
 def advocate_detail(request, username):
