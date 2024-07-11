@@ -4,8 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Q
 
-from .models import Advocate
-from .serializers import AdvocateSerializer
+from .models import Advocate, Company
+from .serializers import AdvocateSerializer, CompanySerializer
 
 # Create your views here.
 @api_view(['GET'])
@@ -59,3 +59,9 @@ def advocate_detail(request, username):
     if request.method == 'DELETE':
         advocate.delete()
         return Response(f'{advocate} deleted')
+    
+@api_view(['GET'])
+def companies_list(request):
+    companies = Company.objects.all()
+    serializer = CompanySerializer(companies, many=True)
+    return Response(serializer.data)
