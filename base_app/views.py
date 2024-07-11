@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -36,8 +36,26 @@ def advocate_list(request):
     
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def advocate_detail(request, username):
     advocate = Advocate.objects.get(username=username)
-    serializer = AdvocateSerializer(advocate, many=False)
-    return Response(serializer.data)
+
+    # Handles GET request
+    if request.method == 'GET':
+        serializer = AdvocateSerializer(advocate, many=False)
+        return Response(serializer.data)
+    
+    # Handles PUT request
+    if request.method  == 'PUT':
+        advocate.username = request.data['username']
+        advocate.bio = request.data['bio']
+
+        advocate.save()
+
+        serializer = AdvocateSerializer(advocate, many=False)
+        return Response(serializer.data)
+
+    # Handles DELETE request
+    if request.method == 'DELETE':
+        advocate.delete()
+        return Response(f'{advocate} deleted')
