@@ -1,11 +1,21 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 
 from .models import Advocate, Company
 from .serializers import AdvocateSerializer, CompanySerializer
+
+from dotenv import load_dotenv
+load_dotenv()
+import os
+
+import requests
+
+TWITTER_API_KEY=os.environ.get('BEARER')
+
 
 # Create your views here.
 @api_view(['GET'])
@@ -14,6 +24,7 @@ def endpoints(request):
     return Response(data)
 
 @api_view(['GET', 'POST'])
+# @permission_classes([IsAuthenticated])
 def advocate_list(request):
     # Handles GET request
     if request.method == 'GET':
@@ -42,8 +53,26 @@ def advocate_detail(request, username):
 
     # Handles GET request
     if request.method == 'GET':
+        head = {'Authorized': 'Bearer' + TWITTER_API_KEY}
+
+        fields = '?user.fields=profile_image_url,description,public_metrics'
+
+        url = "https://api.twitter.com/2/users/by/username/" + str(username) + fields
+        response = requests.get(url, headers=head).json()
+        print('RESPONSE: ', response)
+        data = response['data']
+        data['profile_image_url'] = data['profile_image_url'].replace('normal', "400X400")
+
+        # print('DATA FROM TWITTER:', data)
+        advocate.name = data['name']
+        advocate.profile_pic = data['profile_image_url']
+        advocate.bio = data['description']
+        advocate.twitter = 'https://x.com/' + username
+        advocate.save()
+
         serializer = AdvocateSerializer(advocate, many=False)
         return Response(serializer.data)
+        # return Response(data)
     
     # Handles PUT request
     if request.method  == 'PUT':
@@ -65,3 +94,5 @@ def companies_list(request):
     companies = Company.objects.all()
     serializer = CompanySerializer(companies, many=True)
     return Response(serializer.data)
+
+
